@@ -1,0 +1,8 @@
+[
+	{
+		"name": "oprec-digilab",
+		"supabase_url": "https://aqrkyqfmgegqetneuksb.supabase.co",
+		"supabase_key_env": "SUPABASE_KEY_1",
+		"table_name": "service_records"
+	}
+]

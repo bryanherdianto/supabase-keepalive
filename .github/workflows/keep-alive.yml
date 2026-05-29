@@ -1,4 +1,4 @@
-name: Supabase Keep-Alive
+name: Supabase Activity Monitor
 
 # This workflow is OPT-IN and will NOT run automatically.
 # You must set the ENABLE_GITHUB_ACTIONS repository variable to 'true' to activate it.
@@ -6,8 +6,8 @@ name: Supabase Keep-Alive
 
 on:
   schedule:
-    # Run at midnight UTC every Monday and Thursday
-    - cron: '0 0 * * 1,4'
+    # Run daily at midnight UTC
+    - cron: "0 0 * * *"
 
   # Allow manual triggering from the Actions tab
   workflow_dispatch:
@@ -26,11 +26,11 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
-          cache: 'pip'
+          python-version: "3.12"
+          cache: "pip"
 
       - name: Install dependencies
-        run: pip install -r requirements.txt
+        run: pip install supabase
 
       - name: Run keep-alive script
         run: python main.py

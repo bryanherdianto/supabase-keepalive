@@ -1,255 +1,256 @@
-# Supabase Inactive Fix
+# Supabase Activity Monitor
 
-![GitHub stars](https://img.shields.io/github/stars/travisvn/supabase-inactive-fix?style=social)
-![GitHub forks](https://img.shields.io/github/forks/travisvn/supabase-inactive-fix?style=social)
-![GitHub repo size](https://img.shields.io/github/repo-size/travisvn/supabase-inactive-fix)
-![GitHub top language](https://img.shields.io/github/languages/top/travisvn/supabase-inactive-fix)
-![GitHub last commit](https://img.shields.io/github/last-commit/travisvn/supabase-inactive-fix?color=red)
+Prevent your Supabase projects from pausing due to inactivity by periodically inserting, monitoring, and deleting entries in specified tables across multiple Supabase databases.
 
-This project helps prevent Supabase projects from pausing due to inactivity by periodically inserting, monitoring, and deleting entries in the specified tables of multiple Supabase databases. The project uses a configuration file (`config.json`) to define multiple databases and automate the keep-alive actions.
+## What It Does
 
-## Features ⭐️
+Supabase pauses free-tier projects after 7 days of inactivity. This tool keeps your databases active by:
 
-- Insert a random string into a specified table for each Supabase database.
-- Monitor the number of entries in the table.
-- Automatically delete entries if the table contains more than a specified number of records.
-- Log successes and failures, and generate a detailed status report.
+1. Inserting a random string into a specified table for each configured database
+2. Monitoring the number of entries in that table
+3. Automatically deleting a random entry if the table exceeds 10 records
+4. Logging successes and failures, and generating a detailed status report
 
-## Setup 🚀
+The script runs automatically via GitHub Actions on a daily scheduled cron job, completely serverless and free.
 
-> **💡 Quick Start:** For the easiest setup, skip to [Deployment Options](#deployment-options-) and use **GitHub Actions** (serverless, no installation required).
+## Features
 
-### Local Development Setup
+- Support for multiple Supabase databases via a single `config.json` file
+- Environment variable-based API key management for security
+- Automatic table entry cleanup to prevent table bloat
+- Detailed status reporting and failure logging
+- Opt-in workflow activation (disabled by default for safety)
 
-1. Clone the repository:
+## Project Structure
 
-    ```bash
-    git clone https://github.com/travisvn/supabase-inactive-fix.git
-    cd supabase-inactive-fix
-    ```
-    
-2. Install the required dependencies:
-    
-    ```bash
-    python -m venv venv
-    source venv/bin/activate  # On Windows use `venv\Scripts\activate`
-    pip install -r requirements.txt
-    ```
-    
-3. Create a `config.json` file in the project root. This file defines your Supabase databases. 
+```
+.
+├── .github/workflows/keep-alive.yml  # GitHub Actions workflow
+├── main.py                           # Main execution script
+├── services/
+│   └── supabase_service.py           # Supabase client wrapper
+├── helpers/
+│   └── utils.py                      # Utility functions
+├── config.json                       # Database configuration (required)
+└── README.md                         # This file
+```
 
-   
-    Example configuration:
-    
-    ```json
-    [
-      {
-        "name": "Database1",
-        "supabase_url": "https://your-supabase-url-1.supabase.co",
-        "supabase_key_env": "SUPABASE_KEY_1",  // Use environment variable for the key
-        "table_name": "KeepAlive"
-      },
-      {
-        "name": "Database2",
-        "supabase_url": "https://your-supabase-url-2.supabase.co",
-        "supabase_key": "your-direct-supabase-key",  // Directly define the key
-        "table_name": "keep-alive"
-      }
-    ]
-    ```
+## Setup
 
-    [See the section below for how to easily configure your database](#supabase-database-setup-)
-    
-    ### Environment Variables Explained
-    
-    In the `config.json` file, you can define either:
-    
-    - **Direct API Key**: Use the `"supabase_key"` field to directly specify your Supabase API key.
-    - **Environment Variable**: Use the `"supabase_key_env"` field to reference an environment variable where the key is stored. This is more secure, especially when running the script in different environments.
-    
-    #### Example:
-    
-    - `"supabase_key_env": "SUPABASE_KEY_1"`: This tells the script to look for an environment variable called `SUPABASE_KEY_1` that contains the actual API key.
-    - `"supabase_key": "your-direct-supabase-key"`: This directly provides the API key within the `config.json` file, which is less secure but simpler for local setups.
+### Prerequisites
 
-4. Set up your environment variables _if you're using them_:
-    
-    Create a `.env` file and store variables there
-    
-    ```
-    SUPABASE_KEY_1="your-supabase-key-1"
-    SUPABASE_KEY_2="your-supabase-key-2"
-    ```
-    
-5. Run the script:
-    
-    ```bash
-    python main.py
-    ```
+- A GitHub account
+- One or more Supabase projects (free tier or paid)
+- A `service_records` table created in each Supabase database (see [Database Setup](#database-setup))
 
-## Deployment Options 🚀
+### Step 1: Fork This Repository
 
-### Option 1: GitHub Actions (Recommended - Serverless)
+Fork this repository to your GitHub account.
 
-The easiest way to deploy this project is using GitHub Actions, which runs completely serverless and free on GitHub's infrastructure.
+### Step 2: Create Your Configuration File
 
-#### Steps:
+Create a new file named `config.json` in the repository root with your Supabase project details:
 
-1. **Fork this repository** to your GitHub account.
+```json
+[
+	{
+		"name": "MyProject",
+		"supabase_url": "https://your-project-id.supabase.co",
+		"supabase_key_env": "SUPABASE_KEY_1",
+		"table_name": "service_records"
+	}
+]
+```
 
-2. **Create your `config.json`** file:
-   - Copy `config.example.json` to `config.json`
-   - Update with your Supabase project URLs and table names
-   - Use `supabase_key_env` (not `supabase_key`) to reference environment variables
+**Important:** Always use `supabase_key_env` (not `supabase_key`) to reference environment variables. This keeps your API keys out of the codebase.
 
-   ```json
-   [
-     {
-       "name": "MyProject",
-       "supabase_url": "https://your-project-id.supabase.co",
-       "supabase_key_env": "SUPABASE_KEY_1",
-       "table_name": "keep-alive"
-     }
-   ]
-   ```
+### Step 3: Commit and Push
 
-3. **Commit and push your `config.json`** to your forked repository.
+Add and commit your `config.json` to the repository:
 
-4. **Set up GitHub Secrets and Variables**:
-   - Go to your forked repository on GitHub
-   - Navigate to **Settings** > **Secrets and variables** > **Actions**
+```bash
+git add config.json
+git commit -m "Add Supabase activity monitor configuration"
+git push origin main
+```
 
-   **First, enable the workflow (Variables tab):**
-   - Click the **Variables** tab
-   - Click **New repository variable**
-   - Name: `ENABLE_GITHUB_ACTIONS`
-   - Value: `true`
+### Step 4: Configure GitHub Secrets and Variables
 
-   **Then, add your API keys (Secrets tab):**
-   - Click the **Secrets** tab
-   - Click **New repository secret**
-   - Add secrets for each database (matching the env var names in your `config.json`):
-     - Name: `SUPABASE_KEY_1`
-     - Value: Your Supabase API key
-   - Repeat for all your databases (`SUPABASE_KEY_2`, `SUPABASE_KEY_3`, etc.)
+Navigate to your forked repository on GitHub and go to **Settings** > **Secrets and variables** > **Actions**.
 
-5. **Enable GitHub Actions**:
-   - Go to the **Actions** tab in your forked repository
-   - Click "I understand my workflows, go ahead and enable them"
+#### Enable the Workflow (Variables Tab)
 
-6. **Test the workflow**:
-   - In the Actions tab, select "Supabase Keep-Alive"
-   - Click "Run workflow" to test it manually
-   - Check the logs to ensure everything works
+1. Click the **Variables** tab
+2. Click **New repository variable**
+3. Name: `ENABLE_GITHUB_ACTIONS`
+4. Value: `true`
 
-**That's it!** The workflow will automatically run every Monday and Thursday at midnight UTC, keeping your Supabase databases active.
+This opt-in mechanism prevents the workflow from running unintentionally on forks.
 
-> **📝 Note for Existing Users:** If you're currently using a local cron job and pull this update, the GitHub Actions workflow will NOT run automatically. It only activates when you explicitly set the `ENABLE_GITHUB_ACTIONS` variable to `true`. You can:
-> - **Keep using your cron job**: Do nothing, the workflow stays disabled
-> - **Switch to GitHub Actions**: Follow the setup steps above and disable your cron job
-> - **Use both** (not recommended): Enable both, but adjust schedules to avoid conflicts
+#### Add Your API Keys (Secrets Tab)
 
-#### Customizing the Schedule
+1. Click the **Secrets** tab
+2. Click **New repository secret**
+3. Add a secret for each database, matching the environment variable names in your `config.json`:
+   - Name: `SUPABASE_KEY_1`
+   - Value: Your Supabase `anon` or `service_role` API key
+4. Repeat for all databases (`SUPABASE_KEY_2`, `SUPABASE_KEY_3`, etc.)
 
-Edit `.github/workflows/keep-alive.yml` and modify the cron expression:
+**Security Note:** Use your `service_role` key if Row Level Security (RLS) is enabled on your `service_records` table. The `anon` key will fail if RLS policies block inserts. See [Database Setup](#database-setup) for more details.
+
+### Step 5: Enable GitHub Actions
+
+1. Go to the **Actions** tab in your forked repository
+2. Click "I understand my workflows, go ahead and enable them"
+
+### Step 6: Test the Workflow
+
+1. In the Actions tab, select "Supabase Activity Monitor"
+2. Click **Run workflow** to execute it manually
+3. Review the logs to verify everything works correctly
+
+**That's it!** The workflow will automatically run daily at midnight UTC.
+
+## Configuration Reference
+
+The `config.json` file accepts an array of database objects with the following properties:
+
+| Property           | Required | Description                                                                   |
+| ------------------ | -------- | ----------------------------------------------------------------------------- |
+| `name`             | Yes      | A friendly name for the database, used in logs and reports.                   |
+| `supabase_url`     | Yes      | The Supabase project URL (e.g., `https://xyz.supabase.co`).                   |
+| `supabase_key_env` | No\*     | The name of the environment variable containing the API key. **Recommended.** |
+| `supabase_key`     | No\*     | A hardcoded API key string. **Not recommended.**                              |
+| `table_name`       | No       | The table to interact with. Defaults to `service_records`.                    |
+
+\*You must provide either `supabase_key_env` or `supabase_key`. Environment variables are strongly preferred for security.
+
+**Example with multiple databases:**
+
+```json
+[
+	{
+		"name": "ProductionDB",
+		"supabase_url": "https://prod-project.supabase.co",
+		"supabase_key_env": "SUPABASE_PROD_KEY",
+		"table_name": "service_records"
+	},
+	{
+		"name": "StagingDB",
+		"supabase_url": "https://staging-project.supabase.co",
+		"supabase_key_env": "SUPABASE_STAGING_KEY",
+		"table_name": "service_records"
+	}
+]
+```
+
+## Customizing the Schedule
+
+By default, the workflow runs daily at midnight UTC. To change this schedule, edit `.github/workflows/keep-alive.yml` and modify the cron expression:
 
 ```yaml
 schedule:
-  - cron: '0 0 * * 1,4'  # Currently: Monday and Thursday at midnight UTC
+  - cron: "0 0 * * *" # Daily at midnight UTC
 ```
 
-### Option 2: Local Cron Job
+Use [crontab.guru](https://crontab.guru) to generate custom cron expressions. For example:
 
-If you prefer to run the script on your own machine or server, you can set up a cron job.
+- Every day at midnight: `0 0 * * *`
+- Every Monday at 9 AM UTC: `0 9 * * 1`
+- Every 6 hours: `0 */6 * * *`
 
-1. Follow the initial setup steps 1-4 from the main [Setup](#setup-) section above.
+## Database Setup
 
-2. Set up a cron job (see [Cron Job Setup](#cron-job-setup-%EF%B8%8F) below for details).
+This project requires a target table in your Supabase Postgres database. The default table name is `service_records`, but you can configure any table name in `config.json`.
 
-## Supabase Database Setup 🔧
+### SQL to Create the Table
 
-This project is predicated on accessing a `keep-alive` table in your Postgres database on Supabase. 
-
-### Sample SQL 
-
-Here's a SQL query for a `keep-alive` table 
+Run this SQL in the Supabase SQL Editor:
 
 ```sql
-CREATE TABLE "keep-alive" (
-  id BIGINT generated BY DEFAULT AS IDENTITY,
-  name text NULL DEFAULT '':: text,
-  random uuid NULL DEFAULT gen_random_uuid (),
-  CONSTRAINT "keep-alive_pkey" PRIMARY key (id)
+CREATE TABLE IF NOT EXISTS "service_records" (
+  id BIGINT GENERATED BY DEFAULT AS IDENTITY,
+  name TEXT NULL DEFAULT ''::TEXT,
+  random UUID NULL DEFAULT gen_random_uuid(),
+  CONSTRAINT "service_records_pkey" PRIMARY KEY (id)
 );
 
-INSERT INTO
-  "keep-alive"(name)
-VALUES
-  ('placeholder'),
-  ('example');
-```
-    
-
-## Cron Job Setup ⏱️
-
-To automate this script, you can create a cron job that runs the script periodically. Below are instructions for setting this up on macOS, Linux, and Windows.
-
-### macOS/Linux
-
-1. Open your crontab file for editing:
-    
-    ```bash
-    crontab -e
-    ```
-    
-2. Add a new cron job to run the script every Monday and Thursday at midnight:
-    
-    ```bash
-    0 0 * * 1,4 cd /path/to/your/project && /path/to/your/project/venv/bin/python main.py >> /path/to/your/project/logfile.log 2>&1
-    ```
-    
-
-This example cron job will:
-
-- Navigate to the project directory.
-- Run the Python script using the virtual environment.
-- Append the output to a logfile.
-
-For reference, here’s an example used in development:
-
-```bash
-0 0 * * 1,4 cd /Users/travis/Workspace/supabase-inactive-fix && /Users/travis/Workspace/supabase-inactive-fix/venv/bin/python main.py >> /Users/travis/Workspace/supabase-inactive-fix/logfile.log 2>&1
+-- Optional: Add initial placeholder data
+INSERT INTO "service_records" (name)
+VALUES ('placeholder'), ('example')
+ON CONFLICT DO NOTHING;
 ```
 
-### Windows (Task Scheduler)
+### Row Level Security (RLS) Considerations
 
-Windows does not have cron jobs, but you can achieve similar functionality using Task Scheduler.
+If your Supabase project has Row Level Security (RLS) enabled by default for new tables, you must either:
 
-1. Open **Task Scheduler** and select **Create Basic Task**.
-    
-2. Name the task and set the trigger to run weekly.
-    
-3. Set the days (e.g., Monday and Thursday) and time (e.g., midnight) when the script should run.
-    
-4. In the **Action** step, select **Start a Program**, and point it to your Python executable within your virtual environment. For example:
-    
-    ```vbnet
-    C:\path\to\your\project\venv\Scripts\python.exe
-    ```
-    
-5. In the **Arguments** field, specify the path to the script:
-    
-    ```vbnet
-    C:\path\to\your\project\main.py
-    ```
-    
-6. Save the task. The script will now run automatically according to the schedule you specified.
-    
+1. **Disable RLS** on the `service_records` table (if it contains no sensitive data):
 
-## Contribution
+   ```sql
+   ALTER TABLE "service_records" DISABLE ROW LEVEL SECURITY;
+   ```
 
-Feel free to open an issue or submit a pull request if you'd like to contribute to this project.
+2. **Create a permissive policy** for the `service_role` key:
+
+   ```sql
+   CREATE POLICY "Allow service_role full access" ON "service_records"
+   FOR ALL USING (true) WITH CHECK (true);
+   ```
+
+3. **Use the `service_role` API key** in your GitHub Secrets. The `anon` key typically cannot bypass RLS unless specific policies are created for it.
+
+## Security Best Practices
+
+- **Never commit API keys** to your repository. Always use GitHub Secrets via `supabase_key_env`.
+- **Use the `service_role` key** if your table has RLS enabled, as it bypasses all policies.
+- **Keep your `config.json` minimal.** Only include non-sensitive configuration data.
+- **Review your fork's visibility.** If your repository is public, ensure no secrets are accidentally exposed in logs.
+
+## How It Works
+
+1. **GitHub Actions Trigger:** The workflow runs on the schedule defined in `keep-alive.yml`, or manually via the Actions tab.
+2. **Environment Setup:** GitHub Actions checks out your code, sets up Python 3.12, and installs the `supabase` package.
+3. **Configuration Loading:** `main.py` reads `config.json` and resolves API keys from the environment variables defined in `supabase_key_env`.
+4. **Database Iteration:** For each database in the config:
+   - A random 10-character string is generated using `secrets` (cryptographically secure).
+   - The string is inserted into the specified table via the Supabase REST API.
+   - The total row count is fetched.
+   - If the count exceeds 10, a random row is deleted to prevent table bloat.
+5. **Reporting:** A detailed status report is logged, including insert success, row count, and deletion status for each database.
+
+## Troubleshooting
+
+### Workflow Does Not Run
+
+- Verify the `ENABLE_GITHUB_ACTIONS` repository variable is set to `true`.
+- Check the **Actions** tab to ensure workflows are enabled for the repository.
+
+### "Configuration file 'config.json' not found"
+
+- Ensure you created `config.json` and committed it to the repository.
+- The file must be in the repository root.
+
+### "Supabase URL or Key missing"
+
+- Verify that `supabase_url` and `supabase_key_env` are correctly set in `config.json`.
+- Ensure the corresponding secret exists in GitHub Secrets and matches the name in `supabase_key_env` exactly.
+
+### Insert or Delete Failures (403 / 401 Errors)
+
+- Confirm you are using the correct API key.
+- If RLS is enabled on your table, use the `service_role` key or create an appropriate RLS policy.
+- Check that the table name in `config.json` exactly matches the table name in your database (case-sensitive for quoted identifiers).
+
+### Table Bloat (Too Many Rows)
+
+- The script deletes a random entry only when the count exceeds 10.
+- If you see many more rows, check the workflow logs for deletion errors.
+
+## Contributing
+
+Contributions are welcome. Feel free to open an issue or submit a pull request if you have suggestions, bug fixes, or improvements.
 
 ## License
 
-This project is licensed under the MIT License. See the `LICENSE` file for more details.
+This project is licensed under the MIT License. See the `LICENSE` file for details.

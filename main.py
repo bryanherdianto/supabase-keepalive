@@ -13,14 +13,15 @@ detailed_status_report = True  # Set to True to generate a detailed status repor
 # Configure logging with timestamp
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s',
-    datefmt='%Y-%m-%d %H:%M:%S'
+    format="%(asctime)s - %(levelname)s - %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
 )
+
 
 def main():
     # Load configurations from config.json
     try:
-        with open('config.json', 'r') as config_file:
+        with open("config.json", "r") as config_file:
             configs = json.load(config_file)
     except FileNotFoundError:
         logging.error("Configuration file 'config.json' not found.")
@@ -37,13 +38,13 @@ def main():
 
     # Iterate over each configuration
     for config in configs:
-        name = config.get('name', 'Unnamed Database')
-        url = config.get('supabase_url')
-        key = config.get('supabase_key')
-        table_name = config.get('table_name', 'KeepAlive')
+        name = config.get("name", "Unnamed Database")
+        url = config.get("supabase_url")
+        key = config.get("supabase_key")
+        table_name = config.get("table_name", "service_records")
 
         # If using environment variables for keys
-        key_env_var = config.get('supabase_key_env')
+        key_env_var = config.get("supabase_key_env")
         if key_env_var:
             key = os.getenv(key_env_var)
 
@@ -74,7 +75,9 @@ def main():
         # Get the count of entries in the table
         count = supabase_client.get_table_count()
         if count is None:
-            logging.error(f"Failed to get count for table '{table_name}' in database '{name}'.")
+            logging.error(
+                f"Failed to get count for table '{table_name}' in database '{name}'."
+            )
             all_successful = False
             if log_failed_databases:
                 failed_databases.append(name)
@@ -87,22 +90,26 @@ def main():
 
         # If there are more than 10 entries, delete a random one
         if count > 10:
-            logging.info(f"Table '{table_name}' has more than 10 entries. Deleting a random entry.")
+            logging.info(
+                f"Table '{table_name}' has more than 10 entries. Deleting a random entry."
+            )
             success_delete = supabase_client.delete_random_entry()
             if not success_delete:
                 all_successful = False
                 if log_failed_databases and name not in failed_databases:
                     failed_databases.append(name)
         else:
-            logging.info(f"Table '{table_name}' has 10 or fewer entries. No deletion needed.")
+            logging.info(
+                f"Table '{table_name}' has 10 or fewer entries. No deletion needed."
+            )
 
         # Collect status information
         if detailed_status_report:
             status = {
-                'name': name,
-                'success_insert': success_insert,
-                'success_delete': success_delete,
-                'count': count
+                "name": name,
+                "success_insert": success_insert,
+                "success_delete": success_delete,
+                "count": count,
             }
             status_report.append(status)
 
@@ -123,7 +130,7 @@ def main():
             logging.info(f"Database: {status['name']}")
             logging.info(f"  Insert Success: {status['success_insert']}")
             logging.info(f"  Entry Count: {status['count']}")
-            if status['success_delete'] is not None:
+            if status["success_delete"] is not None:
                 logging.info(f"  Delete Success: {status['success_delete']}")
             else:
                 logging.info("  Delete Success: N/A")
